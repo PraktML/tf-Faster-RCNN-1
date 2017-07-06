@@ -14,6 +14,7 @@
 
 from scipy.misc import imsave
 
+import pickle
 import shutil
 import argparse
 import numpy as np
@@ -33,12 +34,16 @@ def main():
     # Parse Arguments
     parser = argparse.ArgumentParser(description='BoxCars Arguments')
     parser.add_argument('-p', '--path')
+    parser.add_argument('-n', '--numpy_pickle')
     args = vars(parser.parse_args())
     data_dir = flags['data_directory']
 
     # Load BoxCars pickle file
+    if not args['numpy_pickle']:
+        read_pickle(args)
+
+    return
     data = np.load(os.path.join(args['path'], 'BoxCars.npy'), encoding='latin1').item()
-    print(data['samples'][0])
 
     make_Im_An_Na_directories(data_dir)
     # Just do training data for now
@@ -63,6 +68,36 @@ def main():
 
     # Create and save the cluttered MNIST digits
     # process_digits(all_data, all_labels, flags['data_directory'], args)
+
+def read_pickle(args):
+    data_dir = flags['data_directory']
+
+    with open(os.path.join(args['path'], 'dataset.pkl'), 'rb') as f:
+        data = pickle.load(f, encoding='latin1')
+
+    make_Im_An_Na_directories(data_dir)
+    # Just do training data for now
+    split = flags['all_names'][0]
+
+    i = 0
+    for sample_group in data['samples']:
+        for sample in sample_group['instances']:
+            fname = split + '_img' + str(i)
+            # Add class (0 = background, 1= car) to ground truth
+            box_delta = np.array(sample['3DBB_offset'])
+            box = np.array(sample['3DBB'])
+            offsetted_box = np.subtract(box, box_delta)
+
+            gt = np.array([np.append(sample['2DBB'], np.append(offsetted_box.flatten(), [1]))])
+            # shutil.move(os.path.join(args['path'], sample['path']), data_dir + 'Images/' + fname + '.png')
+
+            np.savetxt(data_dir + 'Annotations/' + fname + '.txt', gt, fmt='%i')
+            with open(data_dir + 'Names/' + split + '.txt', 'a') as f:
+                f.write(fname + '\n')
+            if i == 2:
+                return
+            print(i)
+            i += 1
 
 
 def process_digits(all_data, all_labels, data_directory, args):
