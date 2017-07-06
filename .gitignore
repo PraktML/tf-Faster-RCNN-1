@@ -12,5 +12,6 @@ Data/MNIST/*
 Data/MNIST_data/*
 Data/pascal_voc*
 Data/VOCdevkit*
+Data/BoxCars/*
 .ipynb_checkpoints
 *HRI*
